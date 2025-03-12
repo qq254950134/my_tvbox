@@ -2,6 +2,182 @@
 // TVBox多仓管理系统 - 增强版
 // 配置文件路径
 $config_file = 'config.json';
+$password_file = '.password';
+
+// 默认访问密码
+$default_password = 'admin123';
+
+// 获取或设置密码
+function getPassword() {
+    global $password_file, $default_password;
+    
+    if (file_exists($password_file)) {
+        return trim(file_get_contents($password_file));
+    }
+    
+    // 如果密码文件不存在，创建默认密码
+    file_put_contents($password_file, $default_password);
+    return $default_password;
+}
+
+// 验证会话
+function checkSession() {
+    return isset($_SESSION['tvbox_auth']) && $_SESSION['tvbox_auth'] === true;
+}
+
+// 启动会话
+session_start();
+
+// 处理API请求 - API不需要密码验证
+if (isset($_GET['api']) && $_GET['api'] === 'json') {
+    header('Content-Type: application/json');
+    header('Access-Control-Allow-Origin: *');
+    echo json_encode(getConfig(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+// 处理登录请求
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_action']) && $_POST['login_action'] === 'login') {
+    $input_password = isset($_POST['password']) ? trim($_POST['password']) : '';
+    
+    if ($input_password === getPassword()) {
+        $_SESSION['tvbox_auth'] = true;
+        header('Location: ' . $_SERVER['PHP_SELF']);
+        exit;
+    } else {
+        $login_error = '密码错误，请重试';
+    }
+}
+
+// 处理登出请求
+if (isset($_GET['logout'])) {
+    session_destroy();
+    header('Location: ' . $_SERVER['PHP_SELF']);
+    exit;
+}
+
+// 处理修改密码请求
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_action']) && $_POST['login_action'] === 'change_password') {
+    if (checkSession()) {
+        $new_password = isset($_POST['new_password']) ? trim($_POST['new_password']) : '';
+        
+        if (!empty($new_password)) {
+            file_put_contents($password_file, $new_password);
+            $password_message = '密码已成功修改';
+        } else {
+            $password_error = '新密码不能为空';
+        }
+    }
+}
+
+// 如果未登录，显示登录页面
+if (!checkSession()) {
+    ?>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TVBox多仓管理系统 - 登录</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+        .login-container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        .error {
+            color: #e74c3c;
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #f8d7da;
+            border-radius: 4px;
+            border: 1px solid #f5c6cb;
+        }
+        .api-link {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+        .api-link a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        .api-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h1>TVBox多仓管理系统</h1>
+        <?php if (isset($login_error)): ?>
+        <div class="error"><?php echo htmlspecialchars($login_error); ?></div>
+        <?php endif; ?>
+        <form method="post">
+            <input type="hidden" name="login_action" value="login">
+            <div class="form-group">
+                <label for="password">请输入管理密码：</label>
+                <input type="password" id="password" name="password" required autofocus>
+            </div>
+            <button type="submit">登录</button>
+        </form>
+        <div class="api-link">
+            <p>访问API: <a href="?api=json" target="_blank"><?php echo getServerUrl(); ?>/?api=json</a></p>
+        </div>
+    </div>
+</body>
+</html>
+    <?php
+    exit;
+}
 
 // 获取服务器URL
 function getServerUrl() {
