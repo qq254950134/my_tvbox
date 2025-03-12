@@ -5,7 +5,7 @@
 ## 📌 项目介绍
 本项目由我手动整理和维护，使用了一台闲置服务器进行加速。你可以通过以下地址访问本地整合包：
 
-🔗 [更新时间2025.3.11]**JSON 地址：** [https://tvbox.5200403.xyz/?api=json](https://tvbox.5200403.xyz/?api=json)
+🔗 [更新时间2025.3.11]**JSON 地址：** [https://tvbox.5200403.xyz/?api=json](https://tvbox.5200403.xyz/?api=json)  
 🔗 [更新时间2025.3.11]**JSON 地址：** [http://120.46.39.251/tvbox/duo.json](http://120.46.39.251/tvbox/duo.json)
 
 ## 🌟 特色功能
