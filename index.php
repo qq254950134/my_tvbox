@@ -5,7 +5,10 @@ $config_file = 'config.json';
 $password_file = '.password';
 
 // 默认访问密码
-$default_password = 'admin123';
+$default_password = 'MJJ123';
+
+// 会话超时时间（秒）
+$session_timeout = 1800; // 30分钟
 
 // 获取或设置密码
 function getPassword() {
@@ -22,7 +25,28 @@ function getPassword() {
 
 // 验证会话
 function checkSession() {
-    return isset($_SESSION['tvbox_auth']) && $_SESSION['tvbox_auth'] === true;
+    global $session_timeout;
+    
+    if (!isset($_SESSION['tvbox_auth']) || $_SESSION['tvbox_auth'] !== true) {
+        return false;
+    }
+    
+    // 检查会话是否超时
+    if (!isset($_SESSION['tvbox_last_activity'])) {
+        return false;
+    }
+    
+    $elapsed_time = time() - $_SESSION['tvbox_last_activity'];
+    if ($elapsed_time > $session_timeout) {
+        // 会话超时，清除会话
+        session_unset();
+        session_destroy();
+        return false;
+    }
+    
+    // 更新最后活动时间
+    $_SESSION['tvbox_last_activity'] = time();
+    return true;
 }
 
 // 启动会话
@@ -42,6 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_action']) && $_
     
     if ($input_password === getPassword()) {
         $_SESSION['tvbox_auth'] = true;
+        $_SESSION['tvbox_last_activity'] = time();
         header('Location: ' . $_SERVER['PHP_SELF']);
         exit;
     } else {
@@ -51,6 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_action']) && $_
 
 // 处理登出请求
 if (isset($_GET['logout'])) {
+    session_unset();
     session_destroy();
     header('Location: ' . $_SERVER['PHP_SELF']);
     exit;
